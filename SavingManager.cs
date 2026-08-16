@@ -22,13 +22,12 @@ namespace SavingSystem
 
         class SaveBuffer
         {
-            public string file, buffer;
+            public string file, stringBuffer;
         }
 
         static List<SavingVariableSelector> selectors = new();
         static List<SaveBuffer> buffers = new();
 
-        // Start is called once before the first execution of Update+ after the MonoBehaviour is created
         private static void UpdateReferences()
         {
             selectors.Clear();
@@ -36,28 +35,28 @@ namespace SavingSystem
 
             foreach (var gameObject in SceneManager.GetActiveScene().GetRootGameObjects())
             {
-                SavingVariableSelector s = gameObject.GetComponentInChildren<SavingVariableSelector>();
-                if (s != null) selectors.Add(s);
+                SavingVariableSelector selector = gameObject.GetComponentInChildren<SavingVariableSelector>();
+                if (selector != null) selectors.Add(selector);
             }
 
             foreach (var persistentObj in PersistentObjectManager.GetPersistentObjects())
             {
-                SavingVariableSelector s = persistentObj.GetComponentInChildren<SavingVariableSelector>();
-                if(s != null) selectors.Add(s);
+                SavingVariableSelector selector = persistentObj.GetComponentInChildren<SavingVariableSelector>();
+                if(selector != null) selectors.Add(selector);
             }
 
             HashSet<string> existingFile = new();
-            foreach(var s in selectors)
+            foreach(var selector in selectors)
             {
-                if (string.IsNullOrEmpty(s.GetFileName())) continue;
+                if (string.IsNullOrEmpty(selector.GetFileName())) continue;
 
-                if(!existingFile.Contains(s.GetFileName()))
+                if(!existingFile.Contains(selector.GetFileName()))
                 {
                     SaveBuffer newBuffer = new();
-                    newBuffer.file = s.GetFileName();
-                    newBuffer.buffer = "";
+                    newBuffer.file = selector.GetFileName();
+                    newBuffer.stringBuffer = "";
                     buffers.Add(newBuffer);
-                    existingFile.Add(s.GetFileName());
+                    existingFile.Add(selector.GetFileName());
                 }
             }
         }
@@ -66,42 +65,42 @@ namespace SavingSystem
         {
             UpdateReferences();
 
-            foreach(var b in buffers)
+            foreach(var buffer in buffers)
             {
-                b.buffer = "";
+                buffer.stringBuffer = "";
             }
 
-            foreach(SavingVariableSelector s in selectors)
+            foreach(SavingVariableSelector selector in selectors)
             {
-                if (string.IsNullOrEmpty(s.GetFileName()))
+                if (string.IsNullOrEmpty(selector.GetFileName()))
                 {
-                    Debug.LogWarning($"Selector on GameObject {s.gameObject.name} have an empty file name");
+                    Debug.LogWarning($"Selector on GameObject {selector.gameObject.name} have an empty file name");
                     continue;
                 }
 
-                ref string b = ref buffers.Find(b => b.file == s.GetFileName()).buffer;
+                ref string stringBufferRef = ref buffers.Find(b => b.file == selector.GetFileName()).stringBuffer;
 
-                if (!s.HaveDataToSave()) continue;
+                if (!selector.HaveDataToSave()) continue;
                 Type type;
 
-                b += "ID " + s.GetID() + '\n';
+                stringBufferRef += "ID " + selector.GetID() + '\n';
 
-                foreach (SavingVariableSelector.ComponentSavingData d in s.GetFieldToSave())
+                foreach (SavingVariableSelector.ComponentSavingData data in selector.GetFieldToSave())
                 {
-                    type = d.monoBehaviour.GetType();
-                    b += "COMP " + type.FullName + '\n';
+                    type = data.monoBehaviour.GetType();
+                    stringBufferRef += "COMP " + type.FullName + '\n';
 
-                    foreach (string n in d.fieldsToSaveName)
+                    foreach (string fieldName in data.fieldsToSaveName)
                     {
-                        FieldInfo info = type.GetField(n, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        FieldInfo info = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                         
-                        b += "DATA " + n + ' ' + FormatTypeString(info.FieldType) + ' ' + FormatDataString(info.FieldType, info.GetValue(d.monoBehaviour)) + '\n';
+                        stringBufferRef += "DATA " + fieldName + ' ' + FormatTypeString(info.FieldType) + ' ' + FormatDataString(info.FieldType, info.GetValue(data.monoBehaviour)) + '\n';
                     }
                 }
             }
 
-            foreach (SaveBuffer b in buffers)
-                SavingSystem.WriteToFile(b.file, b.buffer);
+            foreach (SaveBuffer buffer in buffers)
+                SavingSystem.WriteToFile(buffer.file, buffer.stringBuffer);
         }
 
         private static string FormatTypeString(Type type)
@@ -156,11 +155,11 @@ namespace SavingSystem
 
             string[] splitBuffer;
 
-            foreach (SaveBuffer b in buffers)
+            foreach (SaveBuffer buffer in buffers)
             {
-                if (!SavingSystem.ReadFromFile(b.file, out b.buffer)) continue;
+                if (!SavingSystem.ReadFromFile(buffer.file, out buffer.stringBuffer)) continue;
 
-                splitBuffer = b.buffer.Split('\n');
+                splitBuffer = buffer.stringBuffer.Split('\n');
                 GameObject obj = null;
                 Type type = null;
                 MonoBehaviour comp = null;
@@ -212,10 +211,10 @@ namespace SavingSystem
                         Type innerType = Type.GetType(types[1]);
                         var convertor = TypeDescriptor.GetConverter(innerType);
                         string[] data = value.Split(',');
-                        Array a = Array.CreateInstance(innerType, data.Length);
+                        Array array = Array.CreateInstance(innerType, data.Length);
                         for(int i = 0; i < data.Length; i++)
-                            a.SetValue(convertor.ConvertFrom(data[i]), i);
-                        field.SetValue(comp, Activator.CreateInstance(outerType.MakeGenericType(innerType), a));
+                            array.SetValue(convertor.ConvertFrom(data[i]), i);
+                        field.SetValue(comp, Activator.CreateInstance(outerType.MakeGenericType(innerType), array));
                         break;
                     }
             }

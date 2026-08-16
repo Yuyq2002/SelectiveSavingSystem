@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 
 namespace PersistentManager
@@ -8,7 +7,7 @@ namespace PersistentManager
     {
         static List<GameObject> persistentObjects = new();
 
-        public static void DonNotDestroyOnLoad(GameObject obj)
+        public static void RegisterPersistentObject(GameObject obj)
         {
             GameObject.DontDestroyOnLoad(obj);
             if(!persistentObjects.Contains(obj)) persistentObjects.Add(obj);
@@ -16,7 +15,7 @@ namespace PersistentManager
 
         public static GameObject[] GetPersistentObjects()
         {
-            persistentObjects.RemoveAll(po => po == null);
+            persistentObjects.RemoveAll(obj => obj == null);
 
             return persistentObjects.ToArray();
         }

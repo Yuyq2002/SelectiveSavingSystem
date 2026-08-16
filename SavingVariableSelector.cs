@@ -10,12 +10,12 @@ namespace SavingSystem
         public class ComponentSavingData
         {
             public MonoBehaviour monoBehaviour;
-            public string[] fieldsToSaveName;
+            public string[] fieldsToSave;
 
-            public ComponentSavingData(MonoBehaviour monoBehaviour, string[] fieldsDetails)
+            public ComponentSavingData(MonoBehaviour monoBehaviour, string[] fieldNames)
             {
                 this.monoBehaviour = monoBehaviour;
-                this.fieldsToSaveName = fieldsDetails;
+                this.fieldsToSave = fieldNames;
             }
         }
 
@@ -30,16 +30,16 @@ namespace SavingSystem
 
         public string[] GetValue(MonoBehaviour key)
         {
-            ComponentSavingData d = componentSavingData.Find(d => d.monoBehaviour == key);
+            ComponentSavingData data = componentSavingData.Find(data => data.monoBehaviour == key);
 
-            return d == null ? new string[0] : d.fieldsToSaveName;
+            return data == null ? new string[0] : data.fieldsToSave;
         }
 
         public bool ContainsKey(MonoBehaviour key)
         {
-            ComponentSavingData d = componentSavingData.Find(d => d.monoBehaviour == key);
+            ComponentSavingData data = componentSavingData.Find(data => data.monoBehaviour == key);
 
-            return d != null;
+            return data != null;
         }
 
         public string GetFileName()

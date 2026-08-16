@@ -27,21 +27,21 @@ namespace UnityEditor
         class EditorComponentSavingData
         {
             public MonoBehaviour monoBehaviour;
-            public List<EditorFieldData> field;
+            public List<EditorFieldData> fields;
             public bool show;
 
             public EditorComponentSavingData()
             {
                 show = false;
                 monoBehaviour = null;
-                field = new();
+                fields = new();
             }
 
-            public EditorComponentSavingData(MonoBehaviour b, List<EditorFieldData> f)
+            public EditorComponentSavingData(MonoBehaviour inMonoBehaviour, List<EditorFieldData> inFields)
             {
                 show = false;
-                monoBehaviour = b;
-                field = f;
+                monoBehaviour = inMonoBehaviour;
+                fields = inFields;
             }
         }
 
@@ -68,10 +68,10 @@ namespace UnityEditor
                 EditorComponentSavingData newData = new();
                 newData.monoBehaviour = m;
 
-                foreach (var f in m.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+                foreach (var field in m.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
                 {
-                    if (IsPrimitiveOrIncludedType(f.FieldType))
-                        newData.field.Add(new(f.Name, arr.Contains(f.Name)));
+                    if (IsPrimitiveOrIncludedType(field.FieldType))
+                        newData.fields.Add(new(field.Name, arr.Contains(field.Name)));
                 }
 
                 editorData.Add(newData);
@@ -83,27 +83,27 @@ namespace UnityEditor
             DrawDefaultInspector();
             List<ComponentSavingData> newSavingData = new();
 
-            foreach (var d in editorData)
+            foreach (var data in editorData)
             {
-                EditorGUILayout.LabelField(d.monoBehaviour.GetType().Name, titleStyle);
+                EditorGUILayout.LabelField(data.monoBehaviour.GetType().Name, titleStyle);
 
-                d.show = EditorGUILayout.ToggleLeft("Show detail", d.show);
+                data.show = EditorGUILayout.ToggleLeft("Show detail", data.show);
 
-                List<string> newFieldList = new((target as SavingVariableSelector).GetValue(d.monoBehaviour));
+                List<string> newFieldList = new((target as SavingVariableSelector).GetValue(data.monoBehaviour));
 
-                if (d.show)
+                if (data.show)
                 {
-                    foreach (var f in d.field)
+                    foreach (var field in data.fields)
                     {
-                        f.willSave = EditorGUILayout.Toggle(f.fieldName, newFieldList.Contains(f.fieldName));
+                        field.willSave = EditorGUILayout.Toggle(field.fieldName, newFieldList.Contains(field.fieldName));
 
-                        if (f.willSave) { if (!newFieldList.Contains(f.fieldName)) 
-                                newFieldList.Add(f.fieldName); }
-                        else newFieldList.Remove(f.fieldName);
+                        if (field.willSave) { if (!newFieldList.Contains(field.fieldName)) 
+                                newFieldList.Add(field.fieldName); }
+                        else newFieldList.Remove(field.fieldName);
                     }
                 }
 
-                if(newFieldList.Count > 0) newSavingData.Add(new ComponentSavingData(d.monoBehaviour, newFieldList.ToArray()));
+                if(newFieldList.Count > 0) newSavingData.Add(new ComponentSavingData(data.monoBehaviour, newFieldList.ToArray()));
 
                 EditorGUILayout.Space();
             }
